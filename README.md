@@ -1,2 +1,3 @@
-# stahovadlo-rozhlas
-Created with CodeSandbox
+# stahovadlo
+
+Tool pro stahovani z CRo Vltava
