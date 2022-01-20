@@ -1,8 +1,6 @@
 import { useState } from "react";
 import "./styles.css";
 
-// const lukyhoPlejlist = document.querySelector('.sm2-playlist-wrapper'); const odkazy = lukyhoPlejlist.querySelectorAll('a'); odkazy.forEach((odkaz) => {console.log(odkaz.getAttribute('href'))})
-
 export default function App() {
   const [tracks, setTracks] = useState([]);
   const [image, setImage] = useState(null);
@@ -14,7 +12,6 @@ export default function App() {
   const [done, setDone] = useState([]);
   const [programTitle, setProgramTitle] = useState("");
 
-  console.log(done);
   const reset = () => {
     setReady(false);
     setBlob(null);
@@ -44,32 +41,32 @@ export default function App() {
       const html = await res.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
-      const picture = doc.querySelector("picture > source");
-      if (picture) {
-        const img = picture.getAttribute("data-srcset");
-        setImage(img || "");
-      }
+
+      const player = doc.querySelector(".mujRozhlasPlayer");
+      const dataAttribute = player.getAttribute("data-player");
+
+      const obj = JSON.parse(dataAttribute);
+      const tracksTransformed = (obj?.data?.playlist || []).map((item) => {
+        return {
+          href: item.audioLinks[0].url,
+          fileName: `${item.part.padStart(2, "0")}_${item.title
+            .replaceAll(/[: .]+/g, "-")
+            .toLowerCase()}`,
+          title: item.title,
+        };
+      });
+
+      const title = obj?.data?.series?.title;
+      let altTitle = "";
       const content = doc.querySelector(".content");
       if (content) {
         const h1 = content.querySelector("h1");
-        const programTitle = h1.textContent;
-        setProgramTitle(programTitle || "");
+        altTitle = h1.textContent;
       }
-      const playlist = doc.querySelector(".sm2-playlist-wrapper");
-      if (playlist) {
-        const tracks = Array.from(playlist.querySelectorAll("a"));
-        const info = tracks.map((track, index) => {
-          const href = track.getAttribute("href").split("?uuid=")[0];
-          const title = track.querySelector("div > div").textContent;
-          const fileName = `${String(index + 1).padStart(2, "0")}_${title
-            .replaceAll(/[: .]+/g, "-")
-            .toLowerCase()}`;
-          return { href, fileName, title };
-        });
-        setTracks(info);
-      } else {
-        console.log("Nic!");
-      }
+
+      setProgramTitle(title || altTitle || "");
+      setImage(obj?.data?.poster?.src || null);
+      setTracks(tracksTransformed);
     } catch (err) {
       console.log(err);
     } finally {
