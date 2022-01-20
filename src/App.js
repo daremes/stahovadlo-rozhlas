@@ -30,6 +30,40 @@ export default function App() {
     fetchMp3();
   };
 
+  const getLegacy = async (doc) => {
+    const picture = doc.querySelector("picture > source");
+    if (picture) {
+      const img = picture.getAttribute("data-srcset");
+      setImage(img || "");
+    }
+    const content = doc.querySelector(".content");
+    if (content) {
+      const h1 = content.querySelector("h1");
+      const programTitle = h1.textContent;
+      setProgramTitle(programTitle || "");
+    }
+    const playlist = doc.querySelector(".sm2-playlist-wrapper");
+    console.log(doc);
+
+    if (playlist) {
+      const tracks = Array.from(playlist.querySelectorAll("a"));
+      const info = tracks.map((track, index) => {
+        const href = track.getAttribute("href").split("?uuid=")[0];
+        const titleV1 = track.querySelector("div > div")?.textContent;
+        const titleV2 = track.textContent;
+        const title = titleV1 || titleV2 || "Nevim?";
+        const fileName = `${String(index + 1).padStart(2, "0")}_${title
+          .replaceAll(/[: .]+/g, "-")
+          .toLowerCase()}`;
+
+        return { href, fileName, title };
+      });
+      setTracks(info);
+    } else {
+      console.log("Nic!");
+    }
+  };
+
   const getPage = async () => {
     if (!link) {
       return;
@@ -43,6 +77,11 @@ export default function App() {
       const doc = parser.parseFromString(html, "text/html");
 
       const player = doc.querySelector(".mujRozhlasPlayer");
+
+      if (!player) {
+        getLegacy(doc);
+        return;
+      }
       const dataAttribute = player.getAttribute("data-player");
 
       const obj = JSON.parse(dataAttribute);
@@ -129,6 +168,7 @@ export default function App() {
               <button
                 className="confirm"
                 disabled={loading}
+                style={{ color: done.includes(i) ? "#21B6A8" : "#000" }}
                 onClick={() => {
                   loadBlob(track.href, track.fileName, track.title);
                   setDone((prev) => [...prev, i]);
