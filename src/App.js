@@ -1,6 +1,18 @@
 import { useState } from "react";
 import "./styles.css";
 
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
 export default function App() {
   const [tracks, setTracks] = useState([]);
   const [image, setImage] = useState(null);
@@ -11,6 +23,8 @@ export default function App() {
   const [meta, setMeta] = useState({ fileName: "track.mp3", title: "track" });
   const [done, setDone] = useState([]);
   const [programTitle, setProgramTitle] = useState("");
+  const [progress, setProgress] = useState({ loaded: 0, total: 0 });
+  const { loaded, total } = progress;
 
   const reset = () => {
     setReady(false);
@@ -19,7 +33,30 @@ export default function App() {
   const loadBlob = (url, fileName, title) => {
     const fetchMp3 = async () => {
       const response = await fetch(url);
-      const blob = await response.blob();
+      const contentLength = response.headers.get("Content-Length");
+      const total = Number(contentLength);
+      let loaded = 0;
+      const res = new Response(
+        new ReadableStream({
+          async start(controller) {
+            const reader = response.body.getReader();
+            while (true) {
+              try {
+                const { done, value } = await reader.read();
+                if (done) break;
+                loaded += value.byteLength;
+                setProgress({ loaded, total });
+                controller.enqueue(value);
+              } catch (e) {
+                controller.close();
+                console.log("Neco se posralo");
+              }
+            }
+            controller.close();
+          },
+        })
+      );
+      const blob = await res.blob();
       const link = URL.createObjectURL(blob);
       setMeta({ title, fileName });
       setBlob(link);
@@ -43,7 +80,6 @@ export default function App() {
       setProgramTitle(programTitle || "");
     }
     const playlist = doc.querySelector(".sm2-playlist-wrapper");
-    console.log(doc);
 
     if (playlist) {
       const tracks = Array.from(playlist.querySelectorAll("a"));
@@ -123,7 +159,26 @@ export default function App() {
               <div>
                 <img src="/skate.gif" alt="loading..." />
               </div>
+              <div
+                style={{
+                  width: 200,
+                  height: 16,
+                  border: "1px solid #000",
+                  margin: 8,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(loaded / total) * 100}%`,
+                    height: 16,
+                    background: "#000",
+                  }}
+                />
+              </div>
               <div className="loading-text">Malý moment. Láduju to tam.</div>
+              <div style={{ margin: 8, fontWeight: "lighter", fontSize: 10 }}>
+                {formatBytes(loaded)}/{formatBytes(total)}
+              </div>
             </div>
           </div>
         </div>
