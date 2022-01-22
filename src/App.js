@@ -167,10 +167,12 @@ export default function App() {
         return;
       }
 
+      console.log("fff");
       const tracksTransformed = (obj?.data?.playlist || []).map((item) => {
+        console.log(item);
         return {
           href: item.audioLinks[0].url,
-          fileName: `${item.part.padStart(2, "0")}_${item.title
+          fileName: `${String(item.part).padStart(2, "0")}_${item.title
             .replaceAll(/[: .]+/g, "-")
             .toLowerCase()}`,
           title: item.title,
