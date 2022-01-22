@@ -30,6 +30,7 @@ export default function App() {
     setReady(false);
     setBlob(null);
   };
+
   const loadBlob = (url, fileName, title) => {
     const fetchMp3 = async () => {
       const response = await fetch(url);
@@ -100,6 +101,41 @@ export default function App() {
     }
   };
 
+  const handleMainPlayer = async (uuid) => {
+    const BASE = "https://api.mujrozhlas.cz/episodes/";
+    let playlistData = null;
+    try {
+      const res = await fetch(`${BASE}${uuid}`);
+      playlistData = (await res.json()).data?.attributes;
+    } catch (e) {
+      console.log("prdlacky");
+      setLoading(false);
+      return;
+    }
+
+    if (!playlistData) {
+      console.log("prdlacky");
+      setLoading(false);
+    }
+
+    const title = playlistData.title || "track";
+    const image = playlistData.asset?.url || null;
+
+    const tracks = playlistData.audioLinks.map((track, index) => {
+      return {
+        href: track.url,
+        title,
+        fileName: `${String(index + 1).padStart(2, "0")}_${title
+          .replaceAll(/[: .]+/g, "-")
+          .toLowerCase()}`,
+      };
+    });
+
+    setProgramTitle(title);
+    setImage(image);
+    setTracks(tracks);
+  };
+
   const getPage = async () => {
     if (!link) {
       return;
@@ -112,15 +148,25 @@ export default function App() {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
 
-      const player = doc.querySelector(".mujRozhlasPlayer");
+      const playerV1 = doc.querySelector(".mujRozhlasPlayer");
+      const playerV2 = doc.querySelector("section.player-wrapper");
+      const player = playerV1 || playerV2;
 
       if (!player) {
         getLegacy(doc);
         return;
       }
-      const dataAttribute = player.getAttribute("data-player");
+      const dataAttributeV1 = player.getAttribute("data-player");
+      const dataAttributeV2 = player.getAttribute("data-entry");
+      const dataAttribute = dataAttributeV1 || dataAttributeV2;
 
       const obj = JSON.parse(dataAttribute);
+
+      if (obj.uuid && dataAttributeV2) {
+        handleMainPlayer(obj.uuid);
+        return;
+      }
+
       const tracksTransformed = (obj?.data?.playlist || []).map((item) => {
         return {
           href: item.audioLinks[0].url,
@@ -198,7 +244,7 @@ export default function App() {
             onChange={(e) => setLink(e.target.value)}
           />
         </div>
-        <button disabled={!link} type="submit" onClick={getPage}>
+        <button type="submit" disabled={!link}>
           Načíst
         </button>
       </form>
