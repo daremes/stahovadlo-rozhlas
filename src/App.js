@@ -167,18 +167,15 @@ export default function App() {
         return;
       }
 
-      console.log("fff");
       const tracksTransformed = (obj?.data?.playlist || []).map((item) => {
-        console.log(item);
         return {
-          href: item.audioLinks[0].url,
+          href: item.audioLinks[0]?.url,
           fileName: `${String(item.part).padStart(2, "0")}_${item.title
             .replaceAll(/[: .]+/g, "-")
             .toLowerCase()}`,
           title: item.title,
         };
       });
-
       const title = obj?.data?.series?.title;
       let altTitle = "";
       const content = doc.querySelector(".content");
