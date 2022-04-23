@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Dash from "./Dash";
 import "./styles.css";
 
 function formatBytes(bytes, decimals = 2) {
@@ -20,7 +21,11 @@ export default function App() {
   const [blob, setBlob] = useState(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [meta, setMeta] = useState({ fileName: "track.mp3", title: "track" });
+  const [meta, setMeta] = useState({
+    fileName: "track.mp3",
+    title: "track",
+    url: null,
+  });
   const [done, setDone] = useState([]);
   const [programTitle, setProgramTitle] = useState("");
   const [progress, setProgress] = useState({ loaded: 0, total: 0 });
@@ -59,7 +64,7 @@ export default function App() {
       );
       const blob = await res.blob();
       const link = URL.createObjectURL(blob);
-      setMeta({ title, fileName });
+      setMeta({ title, fileName, url });
       setBlob(link);
       setReady(true);
       setLoading(false);
@@ -193,7 +198,7 @@ export default function App() {
       setLoading(false);
     }
   };
-
+  console.log(tracks);
   return (
     <div className="App">
       <h1>Stahovadlo</h1>
@@ -276,6 +281,11 @@ export default function App() {
               >
                 {done.includes(i) ? "✓" : ">"}
               </button>
+              {track.href?.includes(".mpd") && (
+                <div>
+                  <Dash url={track.href} />
+                </div>
+              )}
             </div>
           </div>
         ))}
