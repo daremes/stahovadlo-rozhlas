@@ -11,7 +11,7 @@ export default function Dash({ url }) {
     return () => {
       player.destroy();
     };
-  }, []);
+  }, [url]);
 
   const play = () => {
     const video = vidRef.current;
